@@ -9,6 +9,18 @@ export const BrowsePage: React.FC = () => {
   const [selectedAges, setSelectedAges] = useState<AgeGroup[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<Size[]>([]);
   const [selectedGenders, setSelectedGenders] = useState<Gender[]>([]);
+  const [selectedBreeds, setSelectedBreeds] = useState<string[]>([]);
+  const [breedSearch, setBreedSearch] = useState('');
+
+  const allBreeds = useMemo(() => {
+    const breeds = new Set<string>();
+    PETS.forEach(pet => {
+      if (selectedTypes.length === 0 || selectedTypes.includes(pet.type)) {
+        breeds.add(pet.breed);
+      }
+    });
+    return Array.from(breeds).sort();
+  }, [selectedTypes]);
 
   const filteredPets = useMemo(() => {
     return PETS.filter(pet => {
@@ -16,9 +28,10 @@ export const BrowsePage: React.FC = () => {
       const ageMatch = selectedAges.length === 0 || selectedAges.includes(pet.ageGroup);
       const sizeMatch = selectedSizes.length === 0 || selectedSizes.includes(pet.size);
       const genderMatch = selectedGenders.length === 0 || selectedGenders.includes(pet.gender);
-      return typeMatch && ageMatch && sizeMatch && genderMatch;
+      const breedMatch = selectedBreeds.length === 0 || selectedBreeds.includes(pet.breed);
+      return typeMatch && ageMatch && sizeMatch && genderMatch && breedMatch;
     });
-  }, [selectedTypes, selectedAges, selectedSizes, selectedGenders]);
+  }, [selectedTypes, selectedAges, selectedSizes, selectedGenders, selectedBreeds]);
 
   const toggleFilter = (list: any[], setList: Function, value: any) => {
     if (list.includes(value)) {
@@ -27,6 +40,10 @@ export const BrowsePage: React.FC = () => {
       setList([...list, value]);
     }
   };
+
+  const filteredBreeds = allBreeds.filter(breed => 
+    breed.toLowerCase().includes(breedSearch.toLowerCase())
+  );
 
   return (
     <div className="layout-container py-12">
@@ -41,6 +58,8 @@ export const BrowsePage: React.FC = () => {
                 setSelectedAges([]);
                 setSelectedSizes([]);
                 setSelectedGenders([]);
+                setSelectedBreeds([]);
+                setBreedSearch('');
               }}
               className="text-sm font-medium text-primary hover:underline"
             >
@@ -55,12 +74,47 @@ export const BrowsePage: React.FC = () => {
                   <input 
                     type="checkbox" 
                     checked={selectedTypes.includes(type as AnimalType)}
-                    onChange={() => toggleFilter(selectedTypes, setSelectedTypes, type)}
+                    onChange={() => {
+                      toggleFilter(selectedTypes, setSelectedTypes, type);
+                      setSelectedBreeds([]); // Reset breeds when type changes to avoid invalid combinations
+                    }}
                     className="form-checkbox rounded border-primary/20 text-primary focus:ring-primary"
                   />
                   <span className="text-sm text-slate-600 group-hover:text-primary transition-colors">{type}s</span>
                 </label>
               ))}
+            </FilterGroup>
+
+            <FilterGroup title="Breed">
+              <div className="space-y-3">
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input 
+                    type="text"
+                    placeholder="Search breeds..."
+                    value={breedSearch}
+                    onChange={(e) => setBreedSearch(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-primary/10 rounded-xl text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+                  />
+                </div>
+                <div className="max-h-48 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                  {filteredBreeds.length > 0 ? (
+                    filteredBreeds.map(breed => (
+                      <label key={breed} className="flex items-center gap-3 cursor-pointer group">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedBreeds.includes(breed)}
+                          onChange={() => toggleFilter(selectedBreeds, setSelectedBreeds, breed)}
+                          className="form-checkbox rounded border-primary/20 text-primary focus:ring-primary"
+                        />
+                        <span className="text-sm text-slate-600 group-hover:text-primary transition-colors">{breed}</span>
+                      </label>
+                    ))
+                  ) : (
+                    <p className="text-xs text-slate-400 italic">No breeds found</p>
+                  )}
+                </div>
+              </div>
             </FilterGroup>
 
             <FilterGroup title="Age">
